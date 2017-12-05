@@ -1,0 +1,6 @@
+package: github.com/sandwichcloud/terraform-provider-sandwich
+import:
+- package: github.com/hashicorp/terraform
+  version: 0.10.0
+- package: github.com/sandwichcloud/deli-cli
+  version: 0.0.5
