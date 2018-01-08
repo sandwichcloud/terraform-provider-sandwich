@@ -38,12 +38,12 @@ func resourceImage() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
-			"visibility": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Default:  "PRIVATE",
-				ForceNew: true,
-			},
+			//"visibility": {
+			//	Type:     schema.TypeString,
+			//	Optional: true,
+			//	Default:  "PRIVATE",
+			//	ForceNew: true,
+			//},
 		},
 	}
 }
@@ -54,9 +54,9 @@ func resourceImageCreate(d *schema.ResourceData, meta interface{}) error {
 	name := d.Get("name").(string)
 	regionID := d.Get("region_id").(string)
 	fileName := d.Get("file_name").(string)
-	visibility := d.Get("visibility").(string)
+	//visibility := d.Get("visibility").(string)
 
-	image, err := imageClient.Create(name, regionID, fileName, visibility)
+	image, err := imageClient.Create(name, regionID, fileName, "")
 	if err != nil {
 		return err
 	}
@@ -64,8 +64,8 @@ func resourceImageCreate(d *schema.ResourceData, meta interface{}) error {
 	d.Partial(true) // Things can still be created but error during a state change
 
 	stateConf := &resource.StateChangeConf{
-		Pending:    []string{"CREATING"},
-		Target:     []string{"CREATED"},
+		Pending:    []string{"ToCreate", "Creating"},
+		Target:     []string{"Created"},
 		Refresh:    ImageRefreshFunc(imageClient, image.ID.String()),
 		Timeout:    d.Timeout(schema.TimeoutCreate),
 		Delay:      10 * time.Second,
@@ -99,7 +99,7 @@ func resourceImageRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("name", image.Name)
 	d.Set("region_id", image.RegionID.String())
 	d.Set("file_name", image.FileName)
-	d.Set("visibility", image.Visibility)
+	//d.Set("visibility", image.Visibility)
 
 	return nil
 }
@@ -114,8 +114,8 @@ func resourceImageDelete(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	stateConf := &resource.StateChangeConf{
-		Pending:    []string{"DELETING"},
-		Target:     []string{"DELETED"},
+		Pending:    []string{"ToDelete", "Deleting"},
+		Target:     []string{"Deleted"},
 		Refresh:    ImageRefreshFunc(imageClient, d.Id()),
 		Timeout:    d.Timeout(schema.TimeoutCreate),
 		Delay:      10 * time.Second,
@@ -136,7 +136,7 @@ func ImageRefreshFunc(imageClient client.ImageClientInterface, imageID string) f
 		if err != nil {
 			if apiError, ok := err.(api.APIErrorInterface); ok {
 				if apiError.IsNotFound() {
-					return image, "DELETED", nil
+					return image, "Deleted", nil
 				}
 			}
 			return nil, "", err

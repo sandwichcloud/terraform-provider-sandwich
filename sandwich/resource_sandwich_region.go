@@ -71,8 +71,8 @@ func resourceRegionCreate(d *schema.ResourceData, meta interface{}) error {
 	d.Partial(true) // Things can still be created but error during a state change
 
 	stateConf := &resource.StateChangeConf{
-		Pending:    []string{"CREATING"},
-		Target:     []string{"CREATED"},
+		Pending:    []string{"ToCreate", "Creating"},
+		Target:     []string{"Created"},
 		Refresh:    RegionRefreshFunc(regionClient, region.ID.String()),
 		Timeout:    d.Timeout(schema.TimeoutCreate),
 		Delay:      10 * time.Second,
@@ -134,8 +134,8 @@ func resourceRegionDelete(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	stateConf := &resource.StateChangeConf{
-		Pending:    []string{"DELETING"},
-		Target:     []string{"DELETED"},
+		Pending:    []string{"ToDelete", "Deleting"},
+		Target:     []string{"Deleted"},
 		Refresh:    RegionRefreshFunc(regionClient, d.Id()),
 		Timeout:    d.Timeout(schema.TimeoutCreate),
 		Delay:      10 * time.Second,
@@ -156,7 +156,7 @@ func RegionRefreshFunc(regionClient client.RegionClientInterface, regionID strin
 		if err != nil {
 			if apiError, ok := err.(api.APIErrorInterface); ok {
 				if apiError.IsNotFound() {
-					return region, "DELETED", nil
+					return region, "Deleted", nil
 				}
 			}
 			return nil, "", err

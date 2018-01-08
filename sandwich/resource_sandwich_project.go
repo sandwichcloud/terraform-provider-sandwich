@@ -41,23 +41,7 @@ func resourceProjectCreate(d *schema.ResourceData, meta interface{}) error {
 	if err != nil {
 		return err
 	}
-
-	d.Partial(true) // Things can still be created but error during a state change
-
-	stateConf := &resource.StateChangeConf{
-		Pending:    []string{"CREATING"},
-		Target:     []string{"CREATED"},
-		Refresh:    ProjectRefreshFunc(projectClient, project.ID.String()),
-		Timeout:    d.Timeout(schema.TimeoutCreate),
-		Delay:      10 * time.Second,
-		MinTimeout: 3 * time.Second,
-	}
 	d.SetId(project.ID.String())
-	_, err = stateConf.WaitForState()
-	if err != nil {
-		return fmt.Errorf("Error waiting for project (%s) to become ready: %s", project.ID.String(), err)
-	}
-	d.Partial(false) // There was no error during a state change so we should be safe
 
 	return resourceProjectRead(d, meta)
 }
@@ -92,8 +76,8 @@ func resourceProjectDelete(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	stateConf := &resource.StateChangeConf{
-		Pending:    []string{"DELETING"},
-		Target:     []string{"DELETED"},
+		Pending:    []string{"Created"},
+		Target:     []string{"Deleted"},
 		Refresh:    ProjectRefreshFunc(projectClient, d.Id()),
 		Timeout:    d.Timeout(schema.TimeoutCreate),
 		Delay:      10 * time.Second,
@@ -114,11 +98,11 @@ func ProjectRefreshFunc(projectClient client.ProjectClientInterface, projectID s
 		if err != nil {
 			if apiError, ok := err.(api.APIErrorInterface); ok {
 				if apiError.IsNotFound() {
-					return project, "DELETED", nil
+					return project, "Deleted", nil
 				}
 			}
 			return nil, "", err
 		}
-		return project, project.State, nil
+		return project, "Created", nil
 	}
 }

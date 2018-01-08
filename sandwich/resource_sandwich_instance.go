@@ -33,10 +33,6 @@ func resourceInstance() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
-			"network_port_id": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
 			"service_account_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -106,8 +102,8 @@ func resourceInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 	d.Partial(true) // Things can still be created but error during a state change
 
 	stateConf := &resource.StateChangeConf{
-		Pending:    []string{"BUILDING"},
-		Target:     []string{"ACTIVE"},
+		Pending:    []string{"ToCreate", "Creating"},
+		Target:     []string{"Created"},
 		Refresh:    InstanceRefreshFunc(instanceClient, instance.ID.String()),
 		Timeout:    d.Timeout(schema.TimeoutCreate),
 		Delay:      10 * time.Second,
@@ -141,7 +137,6 @@ func resourceInstanceRead(d *schema.ResourceData, meta interface{}) error {
 
 	d.Set("name", instance.Name)
 	d.Set("image_id", instance.ImageID.String())
-	d.Set("network_port_id", instance.NetworkPortID.String())
 	d.Set("service_account_id", instance.ServiceAccountID.String()) // TODO: this
 
 	networkPort, err := networkPortClient.Get(instance.NetworkPortID.String())
@@ -179,8 +174,8 @@ func resourceInstanceDelete(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	stateConf := &resource.StateChangeConf{
-		Pending:    []string{"DELETING"},
-		Target:     []string{"DELETED"},
+		Pending:    []string{"ToDelete", "Deleting"},
+		Target:     []string{"Deleted"},
 		Refresh:    InstanceRefreshFunc(instanceClient, d.Id()),
 		Timeout:    d.Timeout(schema.TimeoutCreate),
 		Delay:      10 * time.Second,
@@ -201,7 +196,7 @@ func InstanceRefreshFunc(instanceClient client.InstanceClientInterface, instance
 		if err != nil {
 			if apiError, ok := err.(api.APIErrorInterface); ok {
 				if apiError.IsNotFound() {
-					return instance, "DELETED", nil
+					return instance, "Deleted", nil
 				}
 			}
 			return nil, "", err

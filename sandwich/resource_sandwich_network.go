@@ -97,8 +97,8 @@ func resourceNetworkCreate(d *schema.ResourceData, meta interface{}) error {
 	d.Partial(true) // Things can still be created but error during a state change
 
 	stateConf := &resource.StateChangeConf{
-		Pending:    []string{"CREATING"},
-		Target:     []string{"CREATED"},
+		Pending:    []string{"ToCreate", "Creating"},
+		Target:     []string{"Created"},
 		Refresh:    NetworkRefreshFunc(networkClient, network.ID.String()),
 		Timeout:    d.Timeout(schema.TimeoutCreate),
 		Delay:      10 * time.Second,
@@ -155,8 +155,8 @@ func resourceNetworkDelete(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	stateConf := &resource.StateChangeConf{
-		Pending:    []string{"DELETING"},
-		Target:     []string{"DELETED"},
+		Pending:    []string{"ToDelete", "Deleting"},
+		Target:     []string{"Deleted"},
 		Refresh:    NetworkRefreshFunc(networkClient, d.Id()),
 		Timeout:    d.Timeout(schema.TimeoutCreate),
 		Delay:      10 * time.Second,
@@ -177,7 +177,7 @@ func NetworkRefreshFunc(networkClient client.NetworkClientInterface, networkID s
 		if err != nil {
 			if apiError, ok := err.(api.APIErrorInterface); ok {
 				if apiError.IsNotFound() {
-					return network, "DELETED", nil
+					return network, "Deleted", nil
 				}
 			}
 			return nil, "", err

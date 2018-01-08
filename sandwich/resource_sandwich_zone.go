@@ -91,8 +91,8 @@ func resourceZoneCreate(d *schema.ResourceData, meta interface{}) error {
 	d.Partial(true) // Things can still be created but error during a state change
 
 	stateConf := &resource.StateChangeConf{
-		Pending:    []string{"CREATING"},
-		Target:     []string{"CREATED"},
+		Pending:    []string{"ToCreate", "Creating"},
+		Target:     []string{"Created"},
 		Refresh:    ZoneRefreshFunc(zoneClientClient, zone.ID.String()),
 		Timeout:    d.Timeout(schema.TimeoutCreate),
 		Delay:      10 * time.Second,
@@ -156,8 +156,8 @@ func resourceZoneDelete(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	stateConf := &resource.StateChangeConf{
-		Pending:    []string{"DELETING"},
-		Target:     []string{"DELETED"},
+		Pending:    []string{"ToDelete", "Deleting"},
+		Target:     []string{"Deleted"},
 		Refresh:    ZoneRefreshFunc(zoneClient, d.Id()),
 		Timeout:    d.Timeout(schema.TimeoutCreate),
 		Delay:      10 * time.Second,
@@ -178,7 +178,7 @@ func ZoneRefreshFunc(zoneClient client.ZoneClientInterface, zoneID string) func(
 		if err != nil {
 			if apiError, ok := err.(api.APIErrorInterface); ok {
 				if apiError.IsNotFound() {
-					return zone, "DELETED", nil
+					return zone, "Deleted", nil
 				}
 			}
 			return nil, "", err
