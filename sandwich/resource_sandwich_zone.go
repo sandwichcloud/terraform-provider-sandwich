@@ -54,13 +54,13 @@ func resourceZone() *schema.Resource {
 			"core_provision_percent": {
 				Type:     schema.TypeInt,
 				Optional: true,
-				Default:  100,
+				Default:  1600,
 				ForceNew: true,
 			},
 			"ram_provision_percent": {
 				Type:     schema.TypeInt,
 				Optional: true,
-				Default:  100,
+				Default:  150,
 				ForceNew: true,
 			},
 			"schedulable": {
