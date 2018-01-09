@@ -1,14 +1,29 @@
 language: go
 go:
 - 1.8
+services:
+- docker
+addons:
+  apt:
+    packages:
+      - docker-ce
 install:
+- docker --version
 - curl https://glide.sh/get | sh
 - glide install
+env:
+  - secure:
+  - secure:
 script:
-  - |
-    make build-linux;
-    make build-windows;
-    make build-osx;
+  - make build-linux
+  - make build-windows
+  - make build-osx
+  - docker build -t sandwichcloud/terraform-provider-sandwich:latest .
+  - docker tag sandwichcloud/terraform-provider-sandwich:latest "sandwichcloud/terraform-provider-sandwich:$TRAVIS_TAG"
+  - docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"
+  - docker push "sandwichcloud/terraform-provider-sandwich:$TRAVIS_TAG"
+  - docker push sandwichcloud/terraform-provider-sandwich:latest
+
 deploy:
   provider: releases
   skip_cleanup: true
