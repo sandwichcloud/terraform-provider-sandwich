@@ -19,10 +19,10 @@ script:
   - make build-windows
   - make build-osx
   - docker build -t sandwichcloud/terraform-provider-sandwich:latest .
-  - docker tag sandwichcloud/terraform-provider-sandwich:latest "sandwichcloud/terraform-provider-sandwich:$TRAVIS_TAG"
-  - docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"
-  - docker push "sandwichcloud/terraform-provider-sandwich:$TRAVIS_TAG"
-  - docker push sandwichcloud/terraform-provider-sandwich:latest
+  - if [ -n "$TRAVIS_TAG" ]; docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"; fi
+  - if [ -n "$TRAVIS_TAG" ]; docker tag sandwichcloud/terraform-provider-sandwich:latest "sandwichcloud/terraform-provider-sandwich:$TRAVIS_TAG"; fi
+  - if [ -n "$TRAVIS_TAG" ]; docker push "sandwichcloud/terraform-provider-sandwich:$TRAVIS_TAG"; fi
+  - if [ -n "$TRAVIS_TAG" ]; docker push sandwichcloud/terraform-provider-sandwich:latest; fi
 
 deploy:
   provider: releases
