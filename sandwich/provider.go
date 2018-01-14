@@ -42,6 +42,7 @@ func Provider() *schema.Provider {
 			"sandwich_project":  resourceProject(),
 			"sandwich_image":    resourceImage(),
 			"sandwich_keypair":  resourceKeypair(),
+			"sandwich_flavor":   resourceFlavor(),
 			"sandwich_instance": resourceInstance(),
 		},
 		ConfigureFunc: configureProvider,

@@ -1,12 +1,12 @@
-hash: b247994ccf787629bba0f91e7820dcff0764440f929edfc8ba554c2765c331aa
-updated: 2018-01-09T08:51:06.1126076-06:00
+hash: 3aeb6ed81e21f8f88f45615726af464aa8cdf9bc949d5f61a761ad4f04974089
+updated: 2018-01-13T20:50:06.3695946-06:00
 imports:
 - name: github.com/apparentlymart/go-cidr
   version: 2bd8b58cf4275aeb086ade613de226773e29e853
   subpackages:
   - cidr
 - name: github.com/aws/aws-sdk-go
-  version: 17fa5fcd6b0c8da076ef41e6a3a25385e9c129ff
+  version: c8a63b5774a90dab70f0dc6fddc7e7925416d90a
   subpackages:
   - aws
   - aws/awserr
@@ -58,7 +58,7 @@ imports:
 - name: github.com/hashicorp/go-cleanhttp
   version: d5fe4b57a186c716b0e00b8c301cbd9b4182694d
 - name: github.com/hashicorp/go-getter
-  version: 994f50a6f071b07cfbea9eca9618c9674091ca51
+  version: 961f56d2e93379b7d9c578e998d09257509a6f97
   subpackages:
   - helper/url
 - name: github.com/hashicorp/go-hclog
@@ -66,7 +66,7 @@ imports:
 - name: github.com/hashicorp/go-multierror
   version: b7773ae218740a7be65057fc60b366a49b538a44
 - name: github.com/hashicorp/go-plugin
-  version: e2fbc6864d18d3c37b6cde4297ec9fca266d28f1
+  version: e37881a3f1a07fce82b3d99ce0342a72e53386bc
 - name: github.com/hashicorp/go-uuid
   version: 64130c7a86d732268a38cb04cfbaf0cc987fda98
 - name: github.com/hashicorp/go-version
@@ -124,16 +124,17 @@ imports:
 - name: github.com/mitchellh/hashstructure
   version: 2bca23e0e452137f789efbc8610126fd8b94f73b
 - name: github.com/mitchellh/mapstructure
-  version: 06020f85339e21b2478f756a78e295255ffa4d6a
+  version: b4575eea38cca1123ec2dc90c26529b5c5acfcff
 - name: github.com/mitchellh/reflectwalk
   version: 63d60e9d0dbc60cf9164e6510889b0db6683d98c
 - name: github.com/sandwichcloud/deli-cli
-  version: 2fb69365253f8bff2b40b68fd15123093ad54ef1
+  version: 0140b24c73e59e3151fbdc2fb33f203b906688ec
   subpackages:
   - api
   - api/client
   - api/client/auth
-  - api/client/builtin
+  - api/client/database
+  - api/client/flavor
   - api/client/image
   - api/client/instance
   - api/client/keypair
@@ -147,7 +148,7 @@ imports:
   - metadata
   - utils
 - name: github.com/satori/go.uuid
-  version: 879c5887cd475cd7864858769793b2ceb0d44feb
+  version: f58768cc1a7a7e77a3bd49e98cdd21419399b6a3
 - name: github.com/tarm/serial
   version: fdb95b50820e236308fffabc41ccf23f3056be77
 - name: github.com/ulikunitz/xz
@@ -213,7 +214,7 @@ imports:
   subpackages:
   - googleapis/rpc/status
 - name: google.golang.org/grpc
-  version: 6913ad5caedced5d627918609375b057963334a5
+  version: 1cd234627e6f392ade0527d593eb3fe53e832d4a
   subpackages:
   - balancer
   - balancer/base

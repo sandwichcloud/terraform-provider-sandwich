@@ -53,6 +53,17 @@ func resourceInstance() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"flavor_id": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"disk": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
 			"keypair_ids": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -83,6 +94,8 @@ func resourceInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 	networkID := d.Get("network_id").(string)
 	regionID := d.Get("region_id").(string)
 	zoneID := d.Get("zone_id").(string)
+	flavorID := d.Get("flavor_id").(string)
+	disk := d.Get("disk").(int)
 	var keypairIDs []string
 	tags := map[string]string{}
 
@@ -94,7 +107,7 @@ func resourceInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 		tags[k] = v.(string)
 	}
 
-	instance, err := instanceClient.Create(name, imageID, regionID, zoneID, networkID, serviceAccountID, keypairIDs, tags)
+	instance, err := instanceClient.Create(name, imageID, regionID, zoneID, networkID, serviceAccountID, flavorID, disk, keypairIDs, tags)
 	if err != nil {
 		return err
 	}
@@ -147,6 +160,8 @@ func resourceInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("network_id", networkPort.NetworkID.String())
 	d.Set("region_id", instance.RegionID.String())
 	d.Set("zone_id", instance.ZoneID.String())
+	d.Set("flavor_id", instance.FlavorID.String())
+	d.Set("disk", instance.Disk)
 	var keypairIDs []string
 	tags := map[string]string{}
 
