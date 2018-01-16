@@ -14,11 +14,13 @@ func resourceImage() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceImageCreate,
 		Read:   resourceImageRead,
+		Update: resourceImageUpdate,
 		Delete: resourceImageDelete,
 
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(10 * time.Minute),
 			Read:   schema.DefaultTimeout(10 * time.Minute),
+			Update: schema.DefaultTimeout(10 * time.Minute),
 			Delete: schema.DefaultTimeout(10 * time.Minute),
 		},
 
@@ -38,12 +40,11 @@ func resourceImage() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
-			//"visibility": {
-			//	Type:     schema.TypeString,
-			//	Optional: true,
-			//	Default:  "PRIVATE",
-			//	ForceNew: true,
-			//},
+			"public": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
 		},
 	}
 }
@@ -54,9 +55,8 @@ func resourceImageCreate(d *schema.ResourceData, meta interface{}) error {
 	name := d.Get("name").(string)
 	regionID := d.Get("region_id").(string)
 	fileName := d.Get("file_name").(string)
-	//visibility := d.Get("visibility").(string)
 
-	image, err := imageClient.Create(name, regionID, fileName, "")
+	image, err := imageClient.Create(name, regionID, fileName)
 	if err != nil {
 		return err
 	}
@@ -78,7 +78,7 @@ func resourceImageCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 	d.Partial(false) // There was no error during a state change so we should be safe
 
-	return resourceImageRead(d, meta)
+	return resourceImageUpdate(d, meta)
 }
 
 func resourceImageRead(d *schema.ResourceData, meta interface{}) error {
@@ -99,9 +99,27 @@ func resourceImageRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("name", image.Name)
 	d.Set("region_id", image.RegionID.String())
 	d.Set("file_name", image.FileName)
-	//d.Set("visibility", image.Visibility)
+	d.Set("public", image.Public)
 
 	return nil
+}
+
+func resourceImageUpdate(d *schema.ResourceData, meta interface{}) error {
+	config := meta.(*Config)
+	imageClient := config.SandwichClient.Image()
+
+	err := imageClient.ActionSetVisibility(d.Id(), d.Get("public").(bool))
+	if err != nil {
+		if apiError, ok := err.(api.APIError); ok {
+			if apiError.StatusCode != 409 {
+				return err
+			}
+		} else {
+			return err
+		}
+	}
+
+	return resourceImageRead(d, meta)
 }
 
 func resourceImageDelete(d *schema.ResourceData, meta interface{}) error {
