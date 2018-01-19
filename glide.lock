@@ -1,12 +1,12 @@
-hash: 14cdf6cd86c0c0083604f0ff515874f83776c4a018b21cc4e5234c424444e5dd
-updated: 2018-01-15T22:45:42.9260039-06:00
+hash: 733053d2b40acb61f3329ff855cdc7c83bb151c8ab054346204ae13af42adf86
+updated: 2018-01-18T19:46:09.6304202-06:00
 imports:
 - name: github.com/apparentlymart/go-cidr
   version: 2bd8b58cf4275aeb086ade613de226773e29e853
   subpackages:
   - cidr
 - name: github.com/aws/aws-sdk-go
-  version: 2fe57096de348e6cff4031af99254613f8ef73ea
+  version: 42f4ce615286af6026c8aac43a7af02457358ef6
   subpackages:
   - aws
   - aws/awserr
@@ -66,7 +66,7 @@ imports:
 - name: github.com/hashicorp/go-multierror
   version: b7773ae218740a7be65057fc60b366a49b538a44
 - name: github.com/hashicorp/go-plugin
-  version: e37881a3f1a07fce82b3d99ce0342a72e53386bc
+  version: 1fc09c47b843b73705f51ffb0520e3ac1bfecf99
 - name: github.com/hashicorp/go-uuid
   version: 64130c7a86d732268a38cb04cfbaf0cc987fda98
 - name: github.com/hashicorp/go-version
@@ -127,8 +127,10 @@ imports:
   version: b4575eea38cca1123ec2dc90c26529b5c5acfcff
 - name: github.com/mitchellh/reflectwalk
   version: 63d60e9d0dbc60cf9164e6510889b0db6683d98c
+- name: github.com/oklog/run
+  version: 4dadeb3030eda0273a12382bb2348ffc7c9d1a39
 - name: github.com/sandwichcloud/deli-cli
-  version: 851787e73850ccae3d209fcbf9d8bbc303516f36
+  version: 53ffd4c7271cccee277acb402d26b1d0ea2ff4e6
   subpackages:
   - api
   - api/client
@@ -144,6 +146,7 @@ imports:
   - api/client/region
   - api/client/role
   - api/client/serviceAccount
+  - api/client/volume
   - api/client/zone
   - metadata
   - utils
@@ -184,7 +187,7 @@ imports:
   - lex/httplex
   - trace
 - name: golang.org/x/oauth2
-  version: 30785a2c434e431ef7c507b54617d6a951d5f2b4
+  version: b28fcf2b08a19742b43084fb40ab78ac6c3d8067
   subpackages:
   - internal
 - name: golang.org/x/sys
@@ -214,7 +217,7 @@ imports:
   subpackages:
   - googleapis/rpc/status
 - name: google.golang.org/grpc
-  version: 1cd234627e6f392ade0527d593eb3fe53e832d4a
+  version: 46bef23bc38dccc7830e089fc5840c95c4bf24ab
   subpackages:
   - balancer
   - balancer/base
