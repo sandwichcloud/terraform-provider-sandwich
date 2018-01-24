@@ -1,12 +1,12 @@
-hash: 733053d2b40acb61f3329ff855cdc7c83bb151c8ab054346204ae13af42adf86
-updated: 2018-01-18T19:46:09.6304202-06:00
+hash: 75eab3a7e2c8e6b684672b67a883d16579540590e79e801d11c6689df432d2e9
+updated: 2018-01-24T08:37:39.103101-06:00
 imports:
 - name: github.com/apparentlymart/go-cidr
   version: 2bd8b58cf4275aeb086ade613de226773e29e853
   subpackages:
   - cidr
 - name: github.com/aws/aws-sdk-go
-  version: 42f4ce615286af6026c8aac43a7af02457358ef6
+  version: 85827b2b68100949cf995e269f74a151e408fb42
   subpackages:
   - aws
   - aws/awserr
@@ -58,15 +58,15 @@ imports:
 - name: github.com/hashicorp/go-cleanhttp
   version: d5fe4b57a186c716b0e00b8c301cbd9b4182694d
 - name: github.com/hashicorp/go-getter
-  version: 961f56d2e93379b7d9c578e998d09257509a6f97
+  version: 285374cdfad63de2c43d7562f49ced6dde5a7ba0
   subpackages:
   - helper/url
 - name: github.com/hashicorp/go-hclog
-  version: ca137eb4b4389c9bc6f1a6d887f056bf16c00510
+  version: 5bcb0f17e36442247290887cc914a6e507afa5c4
 - name: github.com/hashicorp/go-multierror
   version: b7773ae218740a7be65057fc60b366a49b538a44
 - name: github.com/hashicorp/go-plugin
-  version: 1fc09c47b843b73705f51ffb0520e3ac1bfecf99
+  version: 4812fde368935ee7d8bf9866bdca3d98ecddd30a
 - name: github.com/hashicorp/go-uuid
   version: 64130c7a86d732268a38cb04cfbaf0cc987fda98
 - name: github.com/hashicorp/go-version
@@ -130,7 +130,7 @@ imports:
 - name: github.com/oklog/run
   version: 4dadeb3030eda0273a12382bb2348ffc7c9d1a39
 - name: github.com/sandwichcloud/deli-cli
-  version: 53ffd4c7271cccee277acb402d26b1d0ea2ff4e6
+  version: a5337009824b5023f32382620710745cdf315aa4
   subpackages:
   - api
   - api/client
@@ -213,11 +213,11 @@ imports:
   - internal/urlfetch
   - urlfetch
 - name: google.golang.org/genproto
-  version: a8101f21cf983e773d0c1133ebc5424792003214
+  version: 14790a1795ea4c3387aaf24aed670ddb51f18292
   subpackages:
   - googleapis/rpc/status
 - name: google.golang.org/grpc
-  version: 46bef23bc38dccc7830e089fc5840c95c4bf24ab
+  version: 5ba054bf3709c0a51d1ed76f68d274a8c1eef459
   subpackages:
   - balancer
   - balancer/base
@@ -226,6 +226,7 @@ imports:
   - connectivity
   - credentials
   - encoding
+  - encoding/proto
   - grpclb/grpc_lb_v1/messages
   - grpclog
   - health
