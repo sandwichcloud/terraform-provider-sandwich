@@ -1,12 +1,12 @@
-hash: 75eab3a7e2c8e6b684672b67a883d16579540590e79e801d11c6689df432d2e9
-updated: 2018-01-24T08:37:39.103101-06:00
+hash: 4f7cba56c3984e8a355e393ebf21b77a1218be7fc5b8d1ae8e7aea7a094de7ca
+updated: 2018-01-27T13:18:01.6027277-06:00
 imports:
 - name: github.com/apparentlymart/go-cidr
   version: 2bd8b58cf4275aeb086ade613de226773e29e853
   subpackages:
   - cidr
 - name: github.com/aws/aws-sdk-go
-  version: 85827b2b68100949cf995e269f74a151e408fb42
+  version: 00cca3f093a8236a93fbbeeae7d28ad83811683c
   subpackages:
   - aws
   - aws/awserr
@@ -66,7 +66,7 @@ imports:
 - name: github.com/hashicorp/go-multierror
   version: b7773ae218740a7be65057fc60b366a49b538a44
 - name: github.com/hashicorp/go-plugin
-  version: 4812fde368935ee7d8bf9866bdca3d98ecddd30a
+  version: e53f54cbf51efde642d4711313e829a1ff0c236d
 - name: github.com/hashicorp/go-uuid
   version: 64130c7a86d732268a38cb04cfbaf0cc987fda98
 - name: github.com/hashicorp/go-version
@@ -130,7 +130,7 @@ imports:
 - name: github.com/oklog/run
   version: 4dadeb3030eda0273a12382bb2348ffc7c9d1a39
 - name: github.com/sandwichcloud/deli-cli
-  version: a5337009824b5023f32382620710745cdf315aa4
+  version: 638044770fb3e97805e66f123a6531f9a917d160
   subpackages:
   - api
   - api/client
@@ -187,7 +187,7 @@ imports:
   - lex/httplex
   - trace
 - name: golang.org/x/oauth2
-  version: b28fcf2b08a19742b43084fb40ab78ac6c3d8067
+  version: a032972e28060ca4f5644acffae3dfc268cc09db
   subpackages:
   - internal
 - name: golang.org/x/sys
@@ -213,11 +213,11 @@ imports:
   - internal/urlfetch
   - urlfetch
 - name: google.golang.org/genproto
-  version: 14790a1795ea4c3387aaf24aed670ddb51f18292
+  version: 4eb30f4778eed4c258ba66527a0d4f9ec8a36c45
   subpackages:
   - googleapis/rpc/status
 - name: google.golang.org/grpc
-  version: 5ba054bf3709c0a51d1ed76f68d274a8c1eef459
+  version: 0bd008f5fadb62d228f12b18d016709e8139a7af
   subpackages:
   - balancer
   - balancer/base
