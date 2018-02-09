@@ -150,7 +150,12 @@ func resourceZoneDelete(d *schema.ResourceData, meta interface{}) error {
 	config := meta.(*Config)
 	zoneClient := config.SandwichClient.Zone()
 
-	err := zoneClient.Delete(d.Id())
+	err := zoneClient.ActionSchedule(d.Id(), false)
+	if err != nil {
+		return err
+	}
+
+	err = zoneClient.Delete(d.Id())
 	if err != nil {
 		return err
 	}

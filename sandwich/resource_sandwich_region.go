@@ -128,7 +128,12 @@ func resourceRegionDelete(d *schema.ResourceData, meta interface{}) error {
 	config := meta.(*Config)
 	regionClient := config.SandwichClient.Region()
 
-	err := regionClient.Delete(d.Id())
+	err := regionClient.ActionSchedule(d.Id(), false)
+	if err != nil {
+		return err
+	}
+
+	err = regionClient.Delete(d.Id())
 	if err != nil {
 		return err
 	}
