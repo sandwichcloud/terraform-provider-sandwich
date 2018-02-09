@@ -72,6 +72,26 @@ func resourceInstance() *schema.Resource {
 					Type: schema.TypeString,
 				},
 			},
+			"volumes": {
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"size": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							ForceNew: true,
+						},
+						"auto_delete": {
+							Type:     schema.TypeBool,
+							Default:  true,
+							Optional: true,
+							ForceNew: true,
+						},
+					},
+				},
+			},
 			"tags": {
 				Type:     schema.TypeMap,
 				Optional: true,
@@ -104,6 +124,7 @@ func resourceInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 	disk := d.Get("disk").(int)
 	userData := d.Get("user_data").(string)
 	var keypairIDs []string
+	var initialVolumes []api.InstanceInitialVolume
 	tags := map[string]string{}
 
 	for _, keypairID := range d.Get("keypair_ids").([]interface{}) {
@@ -114,7 +135,15 @@ func resourceInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 		tags[k] = v.(string)
 	}
 
-	instance, err := instanceClient.Create(name, imageID, regionID, zoneID, networkID, serviceAccountID, flavorID, disk, keypairIDs, tags, userData)
+	for _, volumeInfoInt := range d.Get("volumes").([]interface{}) {
+		volumeInfo := volumeInfoInt.(map[string]interface{})
+		initialVolumes = append(initialVolumes, api.InstanceInitialVolume{
+			Size:       volumeInfo["size"].(int),
+			AutoDelete: volumeInfo["auto_delete"].(bool),
+		})
+	}
+
+	instance, err := instanceClient.Create(name, imageID, regionID, zoneID, networkID, serviceAccountID, flavorID, disk, keypairIDs, initialVolumes, tags, userData)
 	if err != nil {
 		return err
 	}
