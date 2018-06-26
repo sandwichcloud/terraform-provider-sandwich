@@ -1,5 +1,3 @@
-// +build !linux !go1.9 appengine
-
 /*
  *
  * Copyright 2018 gRPC authors.
@@ -18,9 +16,22 @@
  *
  */
 
-package channelz
+package grpc
 
-// GetSocketOption gets the socket option info of the conn.
-func GetSocketOption(c interface{}) *SocketOptionData {
-	return nil
+import (
+	"os"
+	"strings"
+)
+
+const (
+	envConfigPrefix        = "GRPC_GO_"
+	envConfigStickinessStr = envConfigPrefix + "STICKINESS"
+)
+
+var (
+	envConfigStickinessOn bool
+)
+
+func init() {
+	envConfigStickinessOn = strings.EqualFold(os.Getenv(envConfigStickinessStr), "on")
 }

@@ -223,10 +223,8 @@ func (rep *Reporter) InjectHandlers(handlers *request.Handlers) {
 	}
 
 	apiCallHandler := request.NamedHandler{Name: APICallMetricHandlerName, Fn: rep.sendAPICallMetric}
-	apiCallAttemptHandler := request.NamedHandler{Name: APICallAttemptMetricHandlerName, Fn: rep.sendAPICallAttemptMetric}
-
 	handlers.Complete.PushFrontNamed(apiCallHandler)
-	handlers.Complete.PushFrontNamed(apiCallAttemptHandler)
 
+	apiCallAttemptHandler := request.NamedHandler{Name: APICallAttemptMetricHandlerName, Fn: rep.sendAPICallAttemptMetric}
 	handlers.AfterRetry.PushFrontNamed(apiCallAttemptHandler)
 }
