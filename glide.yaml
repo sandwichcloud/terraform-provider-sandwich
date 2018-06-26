@@ -2,5 +2,7 @@ package: github.com/sandwichcloud/terraform-provider-sandwich
 import:
 - package: github.com/hashicorp/terraform
   version: 0.11.7
+- package: github.com/hashicorp/go-uuid
+  version: 27454136f0364f2d44b1276c552d69105cf8c498
 - package: github.com/sandwichcloud/deli-cli
   version: 0.0.30
