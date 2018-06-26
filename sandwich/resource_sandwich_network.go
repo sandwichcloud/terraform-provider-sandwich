@@ -29,7 +29,7 @@ func resourceNetwork() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
-			"region_id": {
+			"region_name": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
@@ -77,7 +77,7 @@ func resourceNetworkCreate(d *schema.ResourceData, meta interface{}) error {
 	networkClient := config.SandwichClient.Network()
 
 	name := d.Get("name").(string)
-	regionID := d.Get("region_id").(string)
+	regionName := d.Get("region_name").(string)
 	portGroup := d.Get("port_group").(string)
 	cidr := d.Get("cidr").(string)
 	gateway := net.ParseIP(d.Get("gateway").(string))
@@ -89,7 +89,7 @@ func resourceNetworkCreate(d *schema.ResourceData, meta interface{}) error {
 		dnsServers = append(dnsServers, net.ParseIP(dnsServer.(string)))
 	}
 
-	network, err := networkClient.Create(name, regionID, portGroup, cidr, gateway, poolStart, poolEnd, dnsServers)
+	network, err := networkClient.Create(name, regionName, portGroup, cidr, gateway, poolStart, poolEnd, dnsServers)
 	if err != nil {
 		return err
 	}
@@ -99,15 +99,15 @@ func resourceNetworkCreate(d *schema.ResourceData, meta interface{}) error {
 	stateConf := &resource.StateChangeConf{
 		Pending:    []string{"ToCreate", "Creating"},
 		Target:     []string{"Created"},
-		Refresh:    NetworkRefreshFunc(networkClient, network.ID.String()),
+		Refresh:    NetworkRefreshFunc(networkClient, network.Name),
 		Timeout:    d.Timeout(schema.TimeoutCreate),
 		Delay:      10 * time.Second,
 		MinTimeout: 3 * time.Second,
 	}
-	d.SetId(network.ID.String())
+	d.SetId(network.Name)
 	_, err = stateConf.WaitForState()
 	if err != nil {
-		return fmt.Errorf("Error waiting for network (%s) to become ready: %s", network.ID.String(), err)
+		return fmt.Errorf("Error waiting for network (%s) to become ready: %s", network.Name, err)
 	}
 	d.Partial(false) // There was no error during a state change so we should be safe
 	return resourceNetworkRead(d, meta)
@@ -128,8 +128,7 @@ func resourceNetworkRead(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	d.Set("name", network.Name)
-	d.Set("region_id", network.RegionID.String())
+	d.Set("region_name", network.RegionName)
 	d.Set("port_group", network.PortGroup)
 	d.Set("cidr", network.Cidr)
 	d.Set("gateway", network.Gateway.String())
@@ -151,6 +150,12 @@ func resourceNetworkDelete(d *schema.ResourceData, meta interface{}) error {
 
 	err := networkClient.Delete(d.Id())
 	if err != nil {
+		if apiError, ok := err.(api.APIErrorInterface); ok {
+			if apiError.IsNotFound() {
+				d.SetId("")
+				return nil
+			}
+		}
 		return err
 	}
 
@@ -171,9 +176,9 @@ func resourceNetworkDelete(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 
-func NetworkRefreshFunc(networkClient client.NetworkClientInterface, networkID string) func() (result interface{}, state string, err error) {
+func NetworkRefreshFunc(networkClient client.NetworkClientInterface, networkName string) func() (result interface{}, state string, err error) {
 	return func() (result interface{}, state string, err error) {
-		network, err := networkClient.Get(networkID)
+		network, err := networkClient.Get(networkName)
 		if err != nil {
 			if apiError, ok := err.(api.APIErrorInterface); ok {
 				if apiError.IsNotFound() {

@@ -41,7 +41,7 @@ func resourceProjectCreate(d *schema.ResourceData, meta interface{}) error {
 	if err != nil {
 		return err
 	}
-	d.SetId(project.ID.String())
+	d.SetId(project.Name)
 
 	return resourceProjectRead(d, meta)
 }
@@ -72,6 +72,12 @@ func resourceProjectDelete(d *schema.ResourceData, meta interface{}) error {
 
 	err := projectClient.Delete(d.Id())
 	if err != nil {
+		if apiError, ok := err.(api.APIErrorInterface); ok {
+			if apiError.IsNotFound() {
+				d.SetId("")
+				return nil
+			}
+		}
 		return err
 	}
 
@@ -92,9 +98,9 @@ func resourceProjectDelete(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 
-func ProjectRefreshFunc(projectClient client.ProjectClientInterface, projectID string) func() (result interface{}, state string, err error) {
+func ProjectRefreshFunc(projectClient client.ProjectClientInterface, projectName string) func() (result interface{}, state string, err error) {
 	return func() (result interface{}, state string, err error) {
-		project, err := projectClient.Get(projectID)
+		project, err := projectClient.Get(projectName)
 		if err != nil {
 			if apiError, ok := err.(api.APIErrorInterface); ok {
 				if apiError.IsNotFound() {

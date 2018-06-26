@@ -10,11 +10,11 @@ import (
 	"github.com/sandwichcloud/deli-cli/api/client"
 )
 
-func resourceImage() *schema.Resource {
+func resourceSystemServiceAccount() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceImageCreate,
-		Read:   resourceImageRead,
-		Delete: resourceImageDelete,
+		Create: resourceSystemServiceAccountCreate,
+		Read:   resourceSystemServiceAccountRead,
+		Delete: resourceSystemServiceAccountDelete,
 
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(10 * time.Minute),
@@ -28,68 +28,50 @@ func resourceImage() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
-			"project_name": {
+			"email": {
 				Type:     schema.TypeString,
-				Optional: true,
 				Computed: true,
-				ForceNew: true,
-			},
-			"region_name": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
-			},
-			"file_name": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
 			},
 		},
 	}
 }
 
-func resourceImageCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceSystemServiceAccountCreate(d *schema.ResourceData, meta interface{}) error {
 	config := meta.(*Config)
-	projectName, err := getProject(d, config)
-	if err != nil {
-		return err
-	}
+	serviceAccountClient := config.SandwichClient.SystemServiceAccount()
 
-	imageClient := config.SandwichClient.Image(projectName)
 	name := d.Get("name").(string)
-	regionName := d.Get("region_name").(string)
-	fileName := d.Get("file_name").(string)
-	d.Set("project_name", projectName)
 
-	image, err := imageClient.Create(name, regionName, fileName)
+	serviceAccount, err := serviceAccountClient.Create(name)
 	if err != nil {
 		return err
 	}
+	d.Set("email", serviceAccount.Email)
 
-	d.SetId(image.Name)
-
+	d.Partial(true) // Things can still be created but error during a state change
 	stateConf := &resource.StateChangeConf{
 		Pending:    []string{"ToCreate", "Creating"},
 		Target:     []string{"Created"},
-		Refresh:    ImageRefreshFunc(imageClient, image.Name),
+		Refresh:    SerivceAccountRefreshFunc(serviceAccountClient, serviceAccount.Name),
 		Timeout:    d.Timeout(schema.TimeoutCreate),
 		Delay:      10 * time.Second,
 		MinTimeout: 3 * time.Second,
 	}
-
+	d.SetId(serviceAccount.Name)
 	_, err = stateConf.WaitForState()
 	if err != nil {
-		return fmt.Errorf("Error waiting for image (%s) to become ready: %s", image.Name, err)
+		return fmt.Errorf("Error waiting for system service account (%s) to become ready: %s", serviceAccount.Name, err)
 	}
+	d.Partial(false) // There was no error during a state change so we should be safe
 
-	return resourceImageRead(d, meta)
+	return resourceSystemServiceAccountRead(d, meta)
 }
 
-func resourceImageRead(d *schema.ResourceData, meta interface{}) error {
+func resourceSystemServiceAccountRead(d *schema.ResourceData, meta interface{}) error {
 	config := meta.(*Config)
-	imageClient := config.SandwichClient.Image(d.Get("project_name").(string))
+	serviceAccountClient := config.SandwichClient.SystemServiceAccount()
 
-	image, err := imageClient.Get(d.Id())
+	serviceAccount, err := serviceAccountClient.Get(d.Id())
 	if err != nil {
 		if apiError, ok := err.(api.APIErrorInterface); ok {
 			if apiError.IsNotFound() {
@@ -100,17 +82,16 @@ func resourceImageRead(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	d.Set("region_name", image.RegionName)
-	d.Set("file_name", image.FileName)
+	d.Set("name", serviceAccount.Name)
 
 	return nil
 }
 
-func resourceImageDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceSystemServiceAccountDelete(d *schema.ResourceData, meta interface{}) error {
 	config := meta.(*Config)
-	imageClient := config.SandwichClient.Image(d.Get("project_name").(string))
+	serviceAccountClient := config.SandwichClient.SystemServiceAccount()
 
-	err := imageClient.Delete(d.Id())
+	err := serviceAccountClient.Delete(d.Id())
 	if err != nil {
 		if apiError, ok := err.(api.APIErrorInterface); ok {
 			if apiError.IsNotFound() {
@@ -124,31 +105,31 @@ func resourceImageDelete(d *schema.ResourceData, meta interface{}) error {
 	stateConf := &resource.StateChangeConf{
 		Pending:    []string{"ToDelete", "Deleting"},
 		Target:     []string{"Deleted"},
-		Refresh:    ImageRefreshFunc(imageClient, d.Id()),
+		Refresh:    SerivceAccountRefreshFunc(serviceAccountClient, d.Id()),
 		Timeout:    d.Timeout(schema.TimeoutCreate),
 		Delay:      10 * time.Second,
 		MinTimeout: 3 * time.Second,
 	}
 	_, err = stateConf.WaitForState()
 	if err != nil {
-		return fmt.Errorf("Error waiting for image (%s) to delete: %s", d.Id(), err)
+		return fmt.Errorf("Error waiting for system service account (%s) to delete: %s", d.Id(), err)
 	}
 
 	d.SetId("")
 	return nil
 }
 
-func ImageRefreshFunc(imageClient client.ImageClientInterface, imageName string) func() (result interface{}, state string, err error) {
+func SerivceAccountRefreshFunc(serviceAccountClient client.ServiceAccountClientInterface, serviceAccountId string) func() (result interface{}, state string, err error) {
 	return func() (result interface{}, state string, err error) {
-		image, err := imageClient.Get(imageName)
+		serviceAccount, err := serviceAccountClient.Get(serviceAccountId)
 		if err != nil {
 			if apiError, ok := err.(api.APIErrorInterface); ok {
 				if apiError.IsNotFound() {
-					return image, "Deleted", nil
+					return serviceAccount, "Deleted", nil
 				}
 			}
 			return nil, "", err
 		}
-		return image, image.State, nil
+		return serviceAccount, serviceAccount.State, nil
 	}
 }

@@ -8,7 +8,6 @@ import (
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/sandwichcloud/deli-cli/api"
 	"github.com/sandwichcloud/deli-cli/api/client"
-	"github.com/satori/go.uuid"
 )
 
 func resourceVolume() *schema.Resource {
@@ -31,7 +30,13 @@ func resourceVolume() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
-			"zone_id": {
+			"project_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+			"zone_name": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
@@ -52,7 +57,6 @@ func resourceVolume() *schema.Resource {
 				Required: false,
 				Optional: true,
 				ForceNew: false,
-				Default:  uuid.UUID{}.String(),
 			},
 		},
 	}
@@ -60,30 +64,36 @@ func resourceVolume() *schema.Resource {
 
 func resourceVolumeCreate(d *schema.ResourceData, meta interface{}) error {
 	config := meta.(*Config)
-	volumeClient := config.SandwichClient.Volume()
+	projectName, err := getProject(d, config)
+	if err != nil {
+		return err
+	}
+
+	volumeClient := config.SandwichClient.Volume(projectName)
 	name := d.Get("name").(string)
-	zoneID := d.Get("zone_id").(string)
+	zoneName := d.Get("zone_name").(string)
 	size := d.Get("size").(int)
 	clonedFrom := d.Get("cloned_from").(string)
+	d.Set("project_name", projectName)
 
 	if len(clonedFrom) == 0 {
-		volume, err := volumeClient.Create(name, zoneID, size)
+		volume, err := volumeClient.Create(name, zoneName, size)
 		if err != nil {
 			return err
 		}
 		d.Partial(true)
-		d.SetId(volume.ID.String())
+		d.SetId(volume.Name)
 		stateConf := &resource.StateChangeConf{
 			Pending:    []string{"ToCreate", "Creating"},
 			Target:     []string{"Created"},
-			Refresh:    VolumeStateRefreshFunc(volumeClient, volume.ID.String()),
+			Refresh:    VolumeStateRefreshFunc(volumeClient, volume.Name),
 			Timeout:    d.Timeout(schema.TimeoutCreate),
 			Delay:      10 * time.Second,
 			MinTimeout: 3 * time.Second,
 		}
 		_, err = stateConf.WaitForState()
 		if err != nil {
-			return fmt.Errorf("Error waiting for volume (%s) to become ready: %s", volume.ID.String(), err)
+			return fmt.Errorf("Error waiting for volume (%s) to become ready: %s", volume.Name, err)
 		}
 		d.Partial(false)
 	} else {
@@ -91,23 +101,23 @@ func resourceVolumeCreate(d *schema.ResourceData, meta interface{}) error {
 		if err != nil {
 			return err
 		}
-		volume, err = volumeClient.ActionClone(volume.ID.String(), name)
+		volume, err = volumeClient.ActionClone(volume.Name, name)
 		if err != nil {
 			return err
 		}
 		d.Partial(true)
-		d.SetId(volume.ID.String())
+		d.SetId(volume.Name)
 		stateConf := &resource.StateChangeConf{
 			Pending:    []string{"ToCreate", "Creating"},
 			Target:     []string{"Created"},
-			Refresh:    VolumeStateRefreshFunc(volumeClient, volume.ID.String()),
+			Refresh:    VolumeStateRefreshFunc(volumeClient, volume.Name),
 			Timeout:    d.Timeout(schema.TimeoutCreate),
 			Delay:      10 * time.Second,
 			MinTimeout: 3 * time.Second,
 		}
 		_, err = stateConf.WaitForState()
 		if err != nil {
-			return fmt.Errorf("Error waiting for volume (%s) to become ready: %s", volume.ID.String(), err)
+			return fmt.Errorf("Error waiting for volume (%s) to become ready: %s", volume.Name, err)
 		}
 		d.Partial(false)
 	}
@@ -117,7 +127,7 @@ func resourceVolumeCreate(d *schema.ResourceData, meta interface{}) error {
 
 func resourceVolumeRead(d *schema.ResourceData, meta interface{}) error {
 	config := meta.(*Config)
-	volumeClient := config.SandwichClient.Volume()
+	volumeClient := config.SandwichClient.Volume(d.Get("project_name").(string))
 
 	volume, err := volumeClient.Get(d.Id())
 	if err != nil {
@@ -130,8 +140,7 @@ func resourceVolumeRead(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	d.Set("name", volume.Name)
-	d.Set("zone_id", volume.ZoneID)
+	d.Set("zone_name", volume.ZoneName)
 	d.Set("size", volume.Size)
 	d.Set("attached_to", volume.AttachedTo)
 
@@ -140,14 +149,10 @@ func resourceVolumeRead(d *schema.ResourceData, meta interface{}) error {
 
 func resourceVolumeUpdate(d *schema.ResourceData, meta interface{}) error {
 	config := meta.(*Config)
-	volumeClient := config.SandwichClient.Volume()
+	volumeClient := config.SandwichClient.Volume(d.Get("project_name").(string))
 
 	size := d.Get("size").(int)
-	attachedToStr := d.Get("attached_to").(string)
-	attachedTo, err := uuid.FromString(attachedToStr)
-	if err != nil {
-		return err
-	}
+	attachedTo := d.Get("attached_to").(string)
 
 	volume, err := volumeClient.Get(d.Id())
 	if err != nil {
@@ -161,7 +166,7 @@ func resourceVolumeUpdate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	if volume.AttachedTo != attachedTo {
-		err := volumeClient.ActionDetach(volume.ID.String())
+		err := volumeClient.ActionDetach(volume.Name)
 		if err != nil {
 			if apiError, ok := err.(api.APIError); ok {
 				if apiError.StatusCode != 409 {
@@ -173,14 +178,14 @@ func resourceVolumeUpdate(d *schema.ResourceData, meta interface{}) error {
 		stateConf := &resource.StateChangeConf{
 			Pending:    []string{"DETACHING"},
 			Target:     []string{""},
-			Refresh:    VolumeTaskRefreshFunc(volumeClient, volume.ID.String()),
+			Refresh:    VolumeTaskRefreshFunc(volumeClient, volume.Name),
 			Timeout:    d.Timeout(schema.TimeoutCreate),
 			Delay:      10 * time.Second,
 			MinTimeout: 3 * time.Second,
 		}
 		_, err = stateConf.WaitForState()
 		if err != nil {
-			return fmt.Errorf("Error waiting for volume (%s) to detach: %s", volume.ID.String(), err)
+			return fmt.Errorf("Error waiting for volume (%s) to detach: %s", volume.Name, err)
 		}
 	}
 
@@ -192,33 +197,33 @@ func resourceVolumeUpdate(d *schema.ResourceData, meta interface{}) error {
 		stateConf := &resource.StateChangeConf{
 			Pending:    []string{"GROWING"},
 			Target:     []string{""},
-			Refresh:    VolumeTaskRefreshFunc(volumeClient, volume.ID.String()),
+			Refresh:    VolumeTaskRefreshFunc(volumeClient, volume.Name),
 			Timeout:    d.Timeout(schema.TimeoutCreate),
 			Delay:      10 * time.Second,
 			MinTimeout: 3 * time.Second,
 		}
 		_, err = stateConf.WaitForState()
 		if err != nil {
-			return fmt.Errorf("Error waiting for volume (%s) to grow: %s", volume.ID.String(), err)
+			return fmt.Errorf("Error waiting for volume (%s) to grow: %s", volume.Name, err)
 		}
 	}
 
-	if attachedTo != (uuid.UUID{}) {
-		err := volumeClient.ActionAttach(volume.ID.String(), attachedTo.String())
+	if attachedTo != "" {
+		err := volumeClient.ActionAttach(volume.Name, attachedTo)
 		if err != nil {
 			return err
 		}
 		stateConf := &resource.StateChangeConf{
 			Pending:    []string{"ATTACHING"},
 			Target:     []string{""},
-			Refresh:    VolumeTaskRefreshFunc(volumeClient, volume.ID.String()),
+			Refresh:    VolumeTaskRefreshFunc(volumeClient, volume.Name),
 			Timeout:    d.Timeout(schema.TimeoutCreate),
 			Delay:      10 * time.Second,
 			MinTimeout: 3 * time.Second,
 		}
 		_, err = stateConf.WaitForState()
 		if err != nil {
-			return fmt.Errorf("Error waiting for volume (%s) to attach: %s", volume.ID.String(), err)
+			return fmt.Errorf("Error waiting for volume (%s) to attach: %s", volume.Name, err)
 		}
 	}
 
@@ -227,7 +232,7 @@ func resourceVolumeUpdate(d *schema.ResourceData, meta interface{}) error {
 
 func resourceVolumeDelete(d *schema.ResourceData, meta interface{}) error {
 	config := meta.(*Config)
-	volumeClient := config.SandwichClient.Volume()
+	volumeClient := config.SandwichClient.Volume(d.Get("project_name").(string))
 
 	err := volumeClient.ActionDetach(d.Id())
 	if err != nil {
@@ -236,6 +241,7 @@ func resourceVolumeDelete(d *schema.ResourceData, meta interface{}) error {
 				return err
 			}
 		}
+		return err
 	}
 	stateConf := &resource.StateChangeConf{
 		Pending:    []string{"DETACHING"},
@@ -273,9 +279,9 @@ func resourceVolumeDelete(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 
-func VolumeStateRefreshFunc(volumeClient client.VolumeClientInterface, volumeID string) func() (result interface{}, state string, err error) {
+func VolumeStateRefreshFunc(volumeClient client.VolumeClientInterface, volumeName string) func() (result interface{}, state string, err error) {
 	return func() (result interface{}, state string, err error) {
-		volume, err := volumeClient.Get(volumeID)
+		volume, err := volumeClient.Get(volumeName)
 		if err != nil {
 			if apiError, ok := err.(api.APIErrorInterface); ok {
 				if apiError.IsNotFound() {
@@ -288,9 +294,9 @@ func VolumeStateRefreshFunc(volumeClient client.VolumeClientInterface, volumeID 
 	}
 }
 
-func VolumeTaskRefreshFunc(volumeClient client.VolumeClientInterface, volumeID string) func() (result interface{}, state string, err error) {
+func VolumeTaskRefreshFunc(volumeClient client.VolumeClientInterface, volumeName string) func() (result interface{}, state string, err error) {
 	return func() (result interface{}, state string, err error) {
-		volume, err := volumeClient.Get(volumeID)
+		volume, err := volumeClient.Get(volumeName)
 		if err != nil {
 			if apiError, ok := err.(api.APIErrorInterface); ok {
 				if apiError.IsNotFound() {

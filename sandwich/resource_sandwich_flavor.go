@@ -49,7 +49,7 @@ func resourceFlavorCreate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	d.SetId(flavor.ID.String())
+	d.SetId(flavor.Name)
 
 	return resourceFlavorRead(d, meta)
 }
@@ -69,7 +69,6 @@ func resourceFlavorRead(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	d.Set("name", flavor.Name)
 	d.Set("vcpus", flavor.VCPUS)
 	d.Set("ram", flavor.Ram)
 	d.Set("disk", flavor.Disk)

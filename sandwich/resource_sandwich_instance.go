@@ -28,32 +28,38 @@ func resourceInstance() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
-			"image_id": {
+			"project_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+			"image_name": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"service_account_id": {
+			"service_account_name": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
 			},
-			"network_id": {
+			"network_name": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"region_id": {
+			"region_name": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"zone_id": {
+			"zone_name": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
 			},
-			"flavor_id": {
+			"flavor_name": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
@@ -64,7 +70,7 @@ func resourceInstance() *schema.Resource {
 				Computed: true,
 				ForceNew: true,
 			},
-			"keypair_ids": {
+			"keypair_names": {
 				Type:     schema.TypeList,
 				Optional: true,
 				ForceNew: true,
@@ -113,22 +119,28 @@ func resourceInstance() *schema.Resource {
 
 func resourceInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 	config := meta.(*Config)
-	instanceClient := config.SandwichClient.Instance()
+	projectName, err := getProject(d, config)
+	if err != nil {
+		return err
+	}
+
+	instanceClient := config.SandwichClient.Instance(projectName)
 	name := d.Get("name").(string)
-	imageID := d.Get("image_id").(string)
-	serviceAccountID := d.Get("service_account_id").(string)
-	networkID := d.Get("network_id").(string)
-	regionID := d.Get("region_id").(string)
-	zoneID := d.Get("zone_id").(string)
-	flavorID := d.Get("flavor_id").(string)
+	imageName := d.Get("image_name").(string)
+	serviceAccountName := d.Get("service_account_name").(string)
+	networkName := d.Get("network_name").(string)
+	regionName := d.Get("region_name").(string)
+	zoneName := d.Get("zone_name").(string)
+	flavorName := d.Get("flavor_name").(string)
 	disk := d.Get("disk").(int)
 	userData := d.Get("user_data").(string)
-	var keypairIDs []string
+	d.Set("project_name", projectName)
+	var keypairNames []string
 	var initialVolumes []api.InstanceInitialVolume
 	tags := map[string]string{}
 
-	for _, keypairID := range d.Get("keypair_ids").([]interface{}) {
-		keypairIDs = append(keypairIDs, keypairID.(string))
+	for _, keypairName := range d.Get("keypair_names").([]interface{}) {
+		keypairNames = append(keypairNames, keypairName.(string))
 	}
 
 	for k, v := range d.Get("tags").(map[string]interface{}) {
@@ -143,7 +155,7 @@ func resourceInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 		})
 	}
 
-	instance, err := instanceClient.Create(name, imageID, regionID, zoneID, networkID, serviceAccountID, flavorID, disk, keypairIDs, initialVolumes, tags, userData)
+	instance, err := instanceClient.Create(name, imageName, regionName, zoneName, networkName, serviceAccountName, flavorName, disk, keypairNames, initialVolumes, tags, userData)
 	if err != nil {
 		return err
 	}
@@ -153,15 +165,15 @@ func resourceInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 	stateConf := &resource.StateChangeConf{
 		Pending:    []string{"ToCreate", "Creating"},
 		Target:     []string{"Created"},
-		Refresh:    InstanceRefreshFunc(instanceClient, instance.ID.String()),
+		Refresh:    InstanceRefreshFunc(instanceClient, instance.Name),
 		Timeout:    d.Timeout(schema.TimeoutCreate),
 		Delay:      10 * time.Second,
 		MinTimeout: 3 * time.Second,
 	}
-	d.SetId(instance.ID.String())
+	d.SetId(instance.Name)
 	_, err = stateConf.WaitForState()
 	if err != nil {
-		return fmt.Errorf("Error waiting for instance (%s) to become ready: %s", instance.ID.String(), err)
+		return fmt.Errorf("Error waiting for instance (%s) to become ready: %s", instance.Name, err)
 	}
 	d.Partial(false) // There was no error during a state change so we should be safe
 
@@ -170,8 +182,9 @@ func resourceInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 
 func resourceInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	config := meta.(*Config)
-	instanceClient := config.SandwichClient.Instance()
-	networkPortClient := config.SandwichClient.NetworkPort()
+	projectName := d.Get("project_name").(string)
+	instanceClient := config.SandwichClient.Instance(projectName)
+	networkPortClient := config.SandwichClient.NetworkPort(projectName)
 
 	instance, err := instanceClient.Get(d.Id())
 	if err != nil {
@@ -184,33 +197,32 @@ func resourceInstanceRead(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	d.Set("name", instance.Name)
-	d.Set("image_id", instance.ImageID.String())
-	d.Set("service_account_id", instance.ServiceAccountID.String()) // TODO: this
+	d.Set("image_name", instance.ImageName)
+	d.Set("service_account_name", instance.ServiceAccountName) // TODO: this
 
 	networkPort, err := networkPortClient.Get(instance.NetworkPortID.String())
 	if err != nil {
 		return err
 	}
 
-	d.Set("network_id", networkPort.NetworkID.String())
-	d.Set("region_id", instance.RegionID.String())
-	d.Set("zone_id", instance.ZoneID.String())
-	d.Set("flavor_id", instance.FlavorID.String())
+	d.Set("network_name", networkPort.NetworkName)
+	d.Set("region_name", instance.RegionName)
+	d.Set("zone_name", instance.ZoneName)
+	d.Set("flavor_name", instance.FlavorName)
 	d.Set("disk", instance.Disk)
 	d.Set("user_data", instance.UserData)
-	var keypairIDs []string
+	var keypairNames []string
 	tags := map[string]string{}
 
-	for _, keypair := range instance.KeypairIDs {
-		keypairIDs = append(keypairIDs, keypair.String())
+	for _, keypairName := range instance.KeypairNames {
+		keypairNames = append(keypairNames, keypairName)
 	}
 
 	for k, v := range instance.Tags {
 		tags[k] = v
 	}
 
-	d.Set("keypair_ids", keypairIDs)
+	d.Set("keypair_names", keypairNames)
 	d.Set("tags", tags)
 
 	return nil
@@ -218,10 +230,16 @@ func resourceInstanceRead(d *schema.ResourceData, meta interface{}) error {
 
 func resourceInstanceDelete(d *schema.ResourceData, meta interface{}) error {
 	config := meta.(*Config)
-	instanceClient := config.SandwichClient.Instance()
+	instanceClient := config.SandwichClient.Instance(d.Get("project_name").(string))
 
 	err := instanceClient.Delete(d.Id())
 	if err != nil {
+		if apiError, ok := err.(api.APIErrorInterface); ok {
+			if apiError.IsNotFound() {
+				d.SetId("")
+				return nil
+			}
+		}
 		return err
 	}
 
@@ -242,9 +260,9 @@ func resourceInstanceDelete(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 
-func InstanceRefreshFunc(instanceClient client.InstanceClientInterface, instanceID string) func() (result interface{}, state string, err error) {
+func InstanceRefreshFunc(instanceClient client.InstanceClientInterface, instanceName string) func() (result interface{}, state string, err error) {
 	return func() (result interface{}, state string, err error) {
-		instance, err := instanceClient.Get(instanceID)
+		instance, err := instanceClient.Get(instanceName)
 		if err != nil {
 			if apiError, ok := err.(api.APIErrorInterface); ok {
 				if apiError.IsNotFound() {

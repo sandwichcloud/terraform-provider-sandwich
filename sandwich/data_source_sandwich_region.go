@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/sandwichcloud/deli-cli/api"
 )
 
 func dataSourceRegion() *schema.Resource {
@@ -43,22 +44,18 @@ func dataSourceRegionRead(d *schema.ResourceData, meta interface{}) error {
 	config := meta.(*Config)
 	regionClient := config.SandwichClient.Region()
 
-	regionList, err := regionClient.List(d.Get("name").(string), 2, "")
+	regionName := d.Get("name").(string)
+	region, err := regionClient.Get(regionName)
 	if err != nil {
+		if apiError, ok := err.(api.APIErrorInterface); ok {
+			if apiError.IsNotFound() {
+				return fmt.Errorf("Could not find a region with the name of %s", regionName)
+			}
+		}
 		return err
 	}
 
-	if len(regionList.Regions) == 0 {
-		return fmt.Errorf("Returned no results")
-	}
-
-	if len(regionList.Regions) > 1 {
-		return fmt.Errorf("Returned more than one result")
-	}
-
-	region := regionList.Regions[0]
-
-	d.SetId(region.ID.String())
+	d.SetId(region.Name)
 	d.Set("datacenter", region.Datacenter)
 	d.Set("image_datastore", region.ImageDatastore)
 	d.Set("image_folder", region.ImageFolder)

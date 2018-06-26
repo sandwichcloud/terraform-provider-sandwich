@@ -1,11 +1,11 @@
 package sandwich
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/sandwichcloud/deli-cli/api"
-	"github.com/satori/go.uuid"
 )
 
 func resourceProjectQuota() *schema.Resource {
@@ -23,6 +23,12 @@ func resourceProjectQuota() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
+			"project_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
 			"vcpu": {
 				Type:     schema.TypeInt,
 				Required: true,
@@ -43,7 +49,23 @@ func resourceProjectQuota() *schema.Resource {
 }
 
 func resourceProjectQuotaCreate(d *schema.ResourceData, meta interface{}) error {
-	d.SetId(uuid.NewV4().String())
+	config := meta.(*Config)
+	projectClient := config.SandwichClient.Project()
+	projectName, err := getProject(d, config)
+	if err != nil {
+		return err
+	}
+
+	_, err = projectClient.GetQuota(projectName)
+	if apiError, ok := err.(api.APIErrorInterface); ok {
+		if apiError.IsNotFound() {
+			d.SetId("")
+			return fmt.Errorf("Could not find quota for project %s", projectName)
+		}
+	}
+
+	d.Set("project_name", projectName)
+	d.SetId(projectName)
 	return resourceProjectQuotaUpdate(d, meta)
 }
 
@@ -51,7 +73,7 @@ func resourceProjectQuotaRead(d *schema.ResourceData, meta interface{}) error {
 	config := meta.(*Config)
 	projectClient := config.SandwichClient.Project()
 
-	quota, err := projectClient.GetQuota()
+	quota, err := projectClient.GetQuota(d.Id())
 	if err != nil {
 		if apiError, ok := err.(api.APIErrorInterface); ok {
 			if apiError.IsNotFound() {
@@ -59,7 +81,9 @@ func resourceProjectQuotaRead(d *schema.ResourceData, meta interface{}) error {
 				return nil
 			}
 		}
+		return err
 	}
+
 	d.Set("vcpu", quota.VCPU)
 	d.Set("ram", quota.Ram)
 	d.Set("disk", quota.Disk)
@@ -73,7 +97,7 @@ func resourceProjectQuotaUpdate(d *schema.ResourceData, meta interface{}) error 
 	ram := d.Get("ram").(int)
 	disk := d.Get("disk").(int)
 
-	err := projectClient.SetQuota(vcpu, ram, disk)
+	err := projectClient.SetQuota(d.Id(), vcpu, ram, disk)
 	if err != nil {
 		return err
 	}

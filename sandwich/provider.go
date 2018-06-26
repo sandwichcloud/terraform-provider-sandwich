@@ -11,21 +11,11 @@ func Provider() *schema.Provider {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"username": {
+			"token": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"password": {
-				Type:      schema.TypeString,
-				Required:  true,
-				Sensitive: true,
-			},
-			"auth_method": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Default:  "",
-			},
-			"project_id": {
+			"project_name": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Default:  "",
@@ -36,18 +26,26 @@ func Provider() *schema.Provider {
 			"sandwich_network": dataSourceNetwork(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
-			"sandwich_region":         resourceRegion(),
-			"sandwich_zone":           resourceZone(),
-			"sandwich_network":        resourceNetwork(),
-			"sandwich_project":        resourceProject(),
-			"sandwich_project_quota":  resourceProjectQuota(),
-			"sandwich_project_member": resourceProjectMember(),
-			"sandwich_image":          resourceImage(),
-			"sandwich_image_member":   resourceImageMember(),
-			"sandwich_keypair":        resourceKeypair(),
-			"sandwich_flavor":         resourceFlavor(),
-			"sandwich_instance":       resourceInstance(),
-			"sandwich_volume":         resourceVolume(),
+			"sandwich_location_region":             resourceRegion(),
+			"sandwich_location_zone":               resourceZone(),
+			"sandwich_compute_network":             resourceNetwork(),
+			"sandwich_compute_image":               resourceImage(),
+			"sandwich_compute_keypair":             resourceKeypair(),
+			"sandwich_compute_flavor":              resourceFlavor(),
+			"sandwich_compute_instance":            resourceInstance(),
+			"sandwich_compute_volume":              resourceVolume(),
+			"sandwich_iam_project":                 resourceProject(),
+			"sandwich_iam_project_quota":           resourceProjectQuota(),
+			"sandwich_iam_system_role":             resourceSystemRole(),
+			"sandwich_iam_project_role":            resourceProjectRole(),
+			"sandwich_iam_system_service_account":  resourceSystemServiceAccount(),
+			"sandwich_iam_project_service_account": resourceProjectServiceAccount(),
+			"sandwich_iam_system_policy":           resourceSystemPolicy(),
+			"sandwich_iam_system_policy_binding":   resourceSystemPolicyBinding(),
+			"sandwich_iam_system_policy_member":    resourceSystemPolicyMember(),
+			"sandwich_iam_project_policy":          resourceProjectPolicy(),
+			"sandwich_iam_project_policy_binding":  resourceProjectPolicyBinding(),
+			"sandwich_iam_project_policy_member":   resourceProjectPolicyMember(),
 		},
 		ConfigureFunc: configureProvider,
 	}
@@ -55,11 +53,9 @@ func Provider() *schema.Provider {
 
 func configureProvider(d *schema.ResourceData) (interface{}, error) {
 	config := Config{
-		APIServer:  d.Get("api_server").(string),
-		Username:   d.Get("username").(string),
-		Password:   d.Get("password").(string),
-		AuthMethod: d.Get("auth_method").(string),
-		ProjectID:  d.Get("project_id").(string),
+		APIServer:   d.Get("api_server").(string),
+		Token:       d.Get("token").(string),
+		ProjectName: d.Get("project_name").(string),
 	}
 
 	if err := config.LoadAndValidate(); err != nil {

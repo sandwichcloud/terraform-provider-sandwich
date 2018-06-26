@@ -1,16 +1,17 @@
 package sandwich
 
 import (
+	"errors"
+
+	"github.com/sandwichcloud/deli-cli/api"
 	"github.com/sandwichcloud/deli-cli/api/client"
-	"github.com/sandwichcloud/deli-cli/utils"
+	"golang.org/x/oauth2"
 )
 
 type Config struct {
-	APIServer  string
-	Username   string
-	Password   string
-	AuthMethod string
-	ProjectID  string
+	APIServer   string
+	Token       string
+	ProjectName string
 
 	SandwichClient client.ClientInterface
 }
@@ -21,30 +22,22 @@ func (c *Config) LoadAndValidate() error {
 		APIServer: &c.APIServer,
 	}
 
-	apiDiscover, err := c.SandwichClient.Auth().DiscoverAuth()
-	if err != nil {
-		return err
-	}
-	if c.AuthMethod == "" {
-		c.AuthMethod = *apiDiscover.Default
-	}
-
-	token, err := utils.Login(c.SandwichClient.Auth(), c.Username, c.Password, c.AuthMethod, false)
-	if err != nil {
-		return err
+	token := &oauth2.Token{
+		AccessToken: c.Token,
+		TokenType:   "Bearer",
 	}
 
 	c.SandwichClient.SetToken(token)
-	if c.ProjectID != "" { // If project is given scope to the project
-		project, err := c.SandwichClient.Project().Get(c.ProjectID)
+	if c.ProjectName != "" {
+		_, err := c.SandwichClient.Project().Get(c.ProjectName)
 		if err != nil {
+			if apiError, ok := err.(api.APIErrorInterface); ok {
+				if apiError.IsNotFound() {
+					return errors.New("Configured project does not exist.")
+				}
+			}
 			return err
 		}
-		token, err = c.SandwichClient.Auth().ScopeToken(project)
-		if err != nil {
-			return err
-		}
-		c.SandwichClient.SetToken(token)
 	}
 	return nil
 }

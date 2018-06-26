@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/sandwichcloud/deli-cli/api"
 )
 
 func dataSourceNetwork() *schema.Resource {
@@ -15,7 +16,7 @@ func dataSourceNetwork() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"region_id": {
+			"region_name": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
@@ -60,23 +61,19 @@ func dataSourceNetworkRead(d *schema.ResourceData, meta interface{}) error {
 	config := meta.(*Config)
 	networkClient := config.SandwichClient.Network()
 
-	networkList, err := networkClient.List(d.Get("name").(string), d.Get("region_id").(string), 2, "")
+	networkName := d.Get("name").(string)
+	network, err := networkClient.Get(networkName)
 	if err != nil {
+		if apiError, ok := err.(api.APIErrorInterface); ok {
+			if apiError.IsNotFound() {
+				return fmt.Errorf("Could not find a network with the name of %s", networkName)
+			}
+		}
 		return err
 	}
 
-	if len(networkList.Networks) == 0 {
-		return fmt.Errorf("Returned no results")
-	}
-
-	if len(networkList.Networks) > 1 {
-		return fmt.Errorf("Returned more than one result")
-	}
-
-	network := networkList.Networks[0]
-
-	d.SetId(network.ID.String())
-	d.Set("region_id", network.RegionID.String())
+	d.SetId(network.Name)
+	d.Set("region_name", network.RegionName)
 	d.Set("port_group", network.PortGroup)
 	d.Set("cidr", network.Cidr)
 	d.Set("gateway", network.Gateway.String())

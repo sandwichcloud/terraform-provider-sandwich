@@ -30,7 +30,7 @@ func resourceZone() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
-			"region_id": {
+			"region_name": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
@@ -76,14 +76,14 @@ func resourceZoneCreate(d *schema.ResourceData, meta interface{}) error {
 	config := meta.(*Config)
 	zoneClientClient := config.SandwichClient.Zone()
 	name := d.Get("name").(string)
-	regionID := d.Get("region_id").(string)
+	regionName := d.Get("region_name").(string)
 	vmCluster := d.Get("vm_cluster").(string)
 	vmDatastore := d.Get("vm_datastore").(string)
 	vmFolder := d.Get("vm_folder").(string)
 	coreProvisionPercent := d.Get("core_provision_percent").(int)
 	ramProvisionPercent := d.Get("ram_provision_percent").(int)
 
-	zone, err := zoneClientClient.Create(name, regionID, vmCluster, vmDatastore, vmFolder, coreProvisionPercent, ramProvisionPercent)
+	zone, err := zoneClientClient.Create(name, regionName, vmCluster, vmDatastore, vmFolder, coreProvisionPercent, ramProvisionPercent)
 	if err != nil {
 		return err
 	}
@@ -93,15 +93,15 @@ func resourceZoneCreate(d *schema.ResourceData, meta interface{}) error {
 	stateConf := &resource.StateChangeConf{
 		Pending:    []string{"ToCreate", "Creating"},
 		Target:     []string{"Created"},
-		Refresh:    ZoneRefreshFunc(zoneClientClient, zone.ID.String()),
+		Refresh:    ZoneRefreshFunc(zoneClientClient, zone.Name),
 		Timeout:    d.Timeout(schema.TimeoutCreate),
 		Delay:      10 * time.Second,
 		MinTimeout: 3 * time.Second,
 	}
-	d.SetId(zone.ID.String())
+	d.SetId(zone.Name)
 	_, err = stateConf.WaitForState()
 	if err != nil {
-		return fmt.Errorf("Error waiting for zone (%s) to become ready: %s", zone.ID.String(), err)
+		return fmt.Errorf("Error waiting for zone (%s) to become ready: %s", zone.Name, err)
 	}
 	d.Partial(false) // There was no error during a state change so we should be safe
 
@@ -123,8 +123,7 @@ func resourceZoneRead(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	d.Set("name", zone.Name)
-	d.Set("region_id", zone.RegionID.String())
+	d.Set("region_name", zone.RegionName)
 	d.Set("vm_cluster", zone.VMCluster)
 	d.Set("vm_datastore", zone.VMDatastore)
 	d.Set("vm_folder", zone.VMFolder)
@@ -140,6 +139,12 @@ func resourceZoneUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	err := zoneClient.ActionSchedule(d.Id(), d.Get("schedulable").(bool))
 	if err != nil {
+		if apiError, ok := err.(api.APIErrorInterface); ok {
+			if apiError.IsNotFound() {
+				d.SetId("")
+				return nil
+			}
+		}
 		return err
 	}
 
@@ -157,6 +162,12 @@ func resourceZoneDelete(d *schema.ResourceData, meta interface{}) error {
 
 	err = zoneClient.Delete(d.Id())
 	if err != nil {
+		if apiError, ok := err.(api.APIErrorInterface); ok {
+			if apiError.IsNotFound() {
+				d.SetId("")
+				return nil
+			}
+		}
 		return err
 	}
 
@@ -177,9 +188,9 @@ func resourceZoneDelete(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 
-func ZoneRefreshFunc(zoneClient client.ZoneClientInterface, zoneID string) func() (result interface{}, state string, err error) {
+func ZoneRefreshFunc(zoneClient client.ZoneClientInterface, zoneName string) func() (result interface{}, state string, err error) {
 	return func() (result interface{}, state string, err error) {
-		zone, err := zoneClient.Get(zoneID)
+		zone, err := zoneClient.Get(zoneName)
 		if err != nil {
 			if apiError, ok := err.(api.APIErrorInterface); ok {
 				if apiError.IsNotFound() {
