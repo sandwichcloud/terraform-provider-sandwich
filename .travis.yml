@@ -1,6 +1,6 @@
 language: go
 go:
-- 1.10
+- 1.10.x
 services:
 - docker
 addons:
@@ -9,8 +9,6 @@ addons:
       - docker-ce=18.03.1~ce-0~ubuntu
 install:
 - docker --version
-- curl https://glide.sh/get | sh
-- glide install
 env:
   global:
     - secure: D2knppvgVzJPcS5sBNmx2KHSvl/pejDFNuGe9PUIMKLovR7jXqtoCYuLCGPyYmBSdnnoueVyxBJ/8ORsgOzLCRQLeOlfR8L4LCMrWKR0n8wIxFLbXsXmjEa+5Q6xsJ2l0Duez6aI/DfPWbPPyPRFdF+qSJ3dagkUIC2izWYg9Fepa/nglxy8wLdVNaA1c8pSVRHEgzF4eCB6YLg0BdTEQ/VpN9UzaFWEBPkOv746ruGi8PBbf09TfFdssuTUcHQLNZqcevzwnJ+SMsgPdXf1HFATWd/wCjyosHFGRcMsp8lT/7CGTxb9pdQS0Tj3u3fKSa2HsSLShu/qk+W8H8IKCn+FzdtNmQqLplybwHnVsuLJUyG1hD7G4RCorokEDz3fx7KjSjlgVOj3KCG87f/Tr4Nf+zK+DogRkuYKKvT9Qp468vdGLBLVGCJkxIzlUYsd3kBc95xkhwrmCavvyH9bTstAfWLgkMJeBD7Tu4iu8viWMLW41O5+cfWbyZdoukL9VQfkcGhhMA6tmrx8sTTaWo0B7xzLn+ZqxkuskfZ1kFF0GufWV7twlyjkrwqrEckbQO8eVU32jR6Llv+bui8hvpbP6govi+RzI9eQYWoOgG9tK1DnHHsxt5E8f313O6xvQquDldMiO2rt75Mj2JnH5W1tqTN1i31WMx6rH+7yGHQ=
